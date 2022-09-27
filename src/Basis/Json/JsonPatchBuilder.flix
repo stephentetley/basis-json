@@ -17,7 +17,7 @@
 
 namespace Basis/Json {
 
-    pub enum JsonPatchBuilder[r: Region, ka: Type, a: Type](MonadLib.Builder[r, ka, Interop/Json.JsonPatchBuilder[r], a])
+    pub enum JsonPatchBuilder[r: Region, ka: Type, a: Type](MonadLib.MutStateError[r, ka, Interop/Json.JsonPatchBuilder[r], a])
 
     instance Functor[JsonPatchBuilder[r, ka]] {
         pub def map(f: a -> b \ ef, ma: JsonPatchBuilder[r, ka, a]): JsonPatchBuilder[r, ka, b] \ ef = 
@@ -52,27 +52,27 @@ namespace Basis/Json/JsonPatchBuilder {
     // use Interop/Json.JsonValue;
     // use Interop/Json.JsonValue.{JsonValue};
 
-    pub def getJsonPatchBuilder(x: JsonPatchBuilder[r, ka, a]): MonadLib.Builder[r, ka, Interop/Json.JsonPatchBuilder[r], a] = 
+    pub def getJsonPatchBuilder(x: JsonPatchBuilder[r, ka, a]): MonadLib.MutStateError[r, ka, Interop/Json.JsonPatchBuilder[r], a] = 
         let JsonPatchBuilder(x1) = x;
         x1
 
-    pub def point(x: a): JsonPatchBuilder[r, ka, a] = JsonPatchBuilder(MonadLib/Builder.point(x))
+    pub def point(x: a): JsonPatchBuilder[r, ka, a] = JsonPatchBuilder(MonadLib/MutStateError.point(x))
     
     pub def map(f: a -> b \ ef, ma: JsonPatchBuilder[r, ka, a]): JsonPatchBuilder[r, ka, b] \ ef = 
-        JsonPatchBuilder(MonadLib/Builder.map(f, getJsonPatchBuilder(ma)))
+        JsonPatchBuilder(MonadLib/MutStateError.map(f, getJsonPatchBuilder(ma)))
 
     pub def ap(mf: JsonPatchBuilder[r, ka, a -> b \ ef], ma: JsonPatchBuilder[r, ka, a]): JsonPatchBuilder[r, ka, b] \ ef =
-        JsonPatchBuilder(MonadLib/Builder.ap(getJsonPatchBuilder(mf), getJsonPatchBuilder(ma)))
+        JsonPatchBuilder(MonadLib/MutStateError.ap(getJsonPatchBuilder(mf), getJsonPatchBuilder(ma)))
         
     pub def flatMap(f: a -> JsonPatchBuilder[r, ka, b] \ ef, ma: JsonPatchBuilder[r, ka, a]): JsonPatchBuilder[r, ka, b] \ ef =
-        JsonPatchBuilder(MonadLib/Builder.flatMap(f >> getJsonPatchBuilder, getJsonPatchBuilder(ma)))
+        JsonPatchBuilder(MonadLib/MutStateError.flatMap(f >> getJsonPatchBuilder, getJsonPatchBuilder(ma)))
 
 
     pub def throwError(msg: String): JsonPatchBuilder[r, ka, a] = 
-        JsonPatchBuilder(MonadLib/Builder.throwError(msg))
+        JsonPatchBuilder(MonadLib/MutStateError.throwError(msg))
     
-    pub def liftSetter(f: Interop/Json.JsonPatchBuilder[r] -> Interop/Json.JsonPatchBuilder[r] \ ef): JsonPatchBuilder[r, ka, Unit] \ ef =
-        JsonPatchBuilder(MonadLib/Builder.liftSetter(f))
+    pub def liftSetter!(f: Interop/Json.JsonPatchBuilder[r] -> Interop/Json.JsonPatchBuilder[r] \ ef): JsonPatchBuilder[r, ka, Unit] \ ef =
+        JsonPatchBuilder(MonadLib/MutStateError.liftSetter!(f)) |> Functor.ignore
 
     ///
     /// Returns the result of applying `ma` to the initial state `s`.
@@ -80,7 +80,7 @@ namespace Basis/Json/JsonPatchBuilder {
     pub def runBuilder(r: Region[r], 
                         ma: JsonPatchBuilder[r, a, a], 
                         s: Interop/Json.JsonPatchBuilder[r]): Result[a, String] \ r = 
-        MonadLib/Builder.runBuilder(r, getJsonPatchBuilder(ma), s)
+        MonadLib/MutStateError.runMutStateError(r, getJsonPatchBuilder(ma), s)
 
 
 
@@ -92,13 +92,13 @@ namespace Basis/Json/JsonPatchBuilder {
         }
 
     pub def addBool!(path: {path :: String}, value: Bool): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonPatchBuilder.addBool!(path, value))
+        liftSetter!(Interop/Json/JsonPatchBuilder.addBool!(path, value))
 
     pub def addInt32!(path: {path :: String}, value: Int32): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonPatchBuilder.addInt32!(path, value))
+        liftSetter!(Interop/Json/JsonPatchBuilder.addInt32!(path, value))
 
     pub def addString!(path: {path :: String}, value: String): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonPatchBuilder.addString!(path, value))
+        liftSetter!(Interop/Json/JsonPatchBuilder.addString!(path, value))
 
 /*
 
@@ -106,26 +106,26 @@ namespace Basis/Json/JsonPatchBuilder {
 
     pub def addBigInt(name: String, value: BigInt): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         import javax.json.JsonPatchBuilder.add(String, BigInt): ##javax.json.JsonPatchBuilder & r;
-        liftSetter(x1 -> add(x1, name, value))
+        liftSetter!(x1 -> add(x1, name, value))
 
 
     pub def addFloat64(name: String, value: Float64): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         import javax.json.JsonPatchBuilder.add(String, Float64): ##javax.json.JsonPatchBuilder & r;
-        liftSetter(x1 -> add(x1, name, value))
+        liftSetter!(x1 -> add(x1, name, value))
 
     pub def addInt32(name: String, value: Int32): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         import javax.json.JsonPatchBuilder.add(String, Int32): ##javax.json.JsonPatchBuilder & r;
-        liftSetter(x1 -> add(x1, name, value))
+        liftSetter!(x1 -> add(x1, name, value))
 
 
     pub def addString(name: String, value: String): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         import javax.json.JsonPatchBuilder.add(String, String): ##javax.json.JsonPatchBuilder & r;
-        liftSetter(x1 -> add(x1, name, value))
+        liftSetter!(x1 -> add(x1, name, value))
 
     pub def addJsonValue(name: String, value: JsonValue): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         import javax.json.JsonPatchBuilder.add(String, ##javax.json.JsonValue): ##javax.json.JsonPatchBuilder & r;
         let JsonValue(v1) = value;
-        liftSetter(x1 -> add(x1, name, v1))
+        liftSetter!(x1 -> add(x1, name, v1))
 
 
     pub def addJsonArrayBuilder(name: String, value: JsonArrayBuilder[r, ka, ka]): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
@@ -133,7 +133,7 @@ namespace Basis/Json/JsonPatchBuilder {
         import static javax.json.Json.createArrayBuilder(): ##javax.json.JsonArrayBuilder & r;
         let st = createArrayBuilder();
         match Interop/Json/JsonArrayBuilder.runBuilder(() as Region[r], value, st) {
-            case Ok(_)    => liftSetter(x1 -> add(x1, name, st))
+            case Ok(_)    => liftSetter!(x1 -> add(x1, name, st))
             case Err(msg) => throwError(msg)
         }
 
@@ -142,7 +142,7 @@ namespace Basis/Json/JsonPatchBuilder {
         import static javax.json.Json.createPatchBuilder(): ##javax.json.JsonPatchBuilder & r;
         let st = createPatchBuilder();
         match runBuilder(() as Region[r], value, st) {
-            case Ok(_)    => liftSetter(x1 -> add(x1, name, st))
+            case Ok(_)    => liftSetter!(x1 -> add(x1, name, st))
             case Err(msg) => throwError(msg)
         }
         

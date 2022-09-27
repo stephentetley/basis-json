@@ -17,7 +17,7 @@
 
 namespace Basis/Json {
 
-    pub enum JsonArrayBuilder[r: Region, ka: Type, a: Type](MonadLib.Builder[r, ka, Interop/Json.JsonArrayBuilder[r], a])
+    pub enum JsonArrayBuilder[r: Region, ka: Type, a: Type](MonadLib.MutStateError[r, ka, Interop/Json.JsonArrayBuilder[r], a])
 
     instance Functor[JsonArrayBuilder[r, ka]] {
         pub def map(f: a -> b \ ef, ma: JsonArrayBuilder[r, ka, a]): JsonArrayBuilder[r, ka, b] \ ef = 
@@ -48,30 +48,30 @@ namespace Basis/Json/JsonArrayBuilder {
 
     use Interop/Json.JsonValue;
 
-    pub def getJsonArrayBuilder(x: JsonArrayBuilder[r, ka, a]): MonadLib.Builder[r, ka, Interop/Json.JsonArrayBuilder[r], a] = 
+    pub def getJsonArrayBuilder(x: JsonArrayBuilder[r, ka, a]): MonadLib.MutStateError[r, ka, Interop/Json.JsonArrayBuilder[r], a] = 
         let JsonArrayBuilder(x1) = x;
         x1
 
-    pub def point(x: a): JsonArrayBuilder[r, ka, a] = JsonArrayBuilder(MonadLib/Builder.point(x))
+    pub def point(x: a): JsonArrayBuilder[r, ka, a] = JsonArrayBuilder(MonadLib/MutStateError.point(x))
     
     pub def map(f: a -> b \ ef, ma: JsonArrayBuilder[r, ka, a]): JsonArrayBuilder[r, ka, b] \ ef = 
-        JsonArrayBuilder(MonadLib/Builder.map(f, getJsonArrayBuilder(ma)))
+        JsonArrayBuilder(MonadLib/MutStateError.map(f, getJsonArrayBuilder(ma)))
 
     pub def ap(mf: JsonArrayBuilder[r, ka, a -> b \ ef], ma: JsonArrayBuilder[r, ka, a]): JsonArrayBuilder[r, ka, b] \ ef =
-        JsonArrayBuilder(MonadLib/Builder.ap(getJsonArrayBuilder(mf), getJsonArrayBuilder(ma)))
+        JsonArrayBuilder(MonadLib/MutStateError.ap(getJsonArrayBuilder(mf), getJsonArrayBuilder(ma)))
         
     pub def flatMap(f: a -> JsonArrayBuilder[r, ka, b] \ ef, ma: JsonArrayBuilder[r, ka, a]): JsonArrayBuilder[r, ka, b] \ ef =
-        JsonArrayBuilder(MonadLib/Builder.flatMap(f >> getJsonArrayBuilder, getJsonArrayBuilder(ma)))
+        JsonArrayBuilder(MonadLib/MutStateError.flatMap(f >> getJsonArrayBuilder, getJsonArrayBuilder(ma)))
 
 
     pub def throwError(msg: String): JsonArrayBuilder[r, ka, a] = 
-        JsonArrayBuilder(MonadLib/Builder.throwError(msg))
+        JsonArrayBuilder(MonadLib/MutStateError.throwError(msg))
     
-    pub def liftSetter(f: Interop/Json.JsonArrayBuilder[r] -> Interop/Json.JsonArrayBuilder[r] \ ef): JsonArrayBuilder[r, ka, Unit] \ ef =
-        JsonArrayBuilder(MonadLib/Builder.liftSetter(f))
+    def liftSetter!(f: Interop/Json.JsonArrayBuilder[r] -> Interop/Json.JsonArrayBuilder[r] \ ef): JsonArrayBuilder[r, ka, Unit] \ ef =
+        JsonArrayBuilder(MonadLib/MutStateError.liftSetter!(f)) |> Functor.ignore
     
-    pub def liftSetterResult(f: Interop/Json.JsonArrayBuilder[r] -> Result[Interop/Json.JsonArrayBuilder[r], err] \ ef): JsonArrayBuilder[r, ka, Unit] \ ef with ToString[err] =
-        JsonArrayBuilder(MonadLib/Builder.liftSetterResult(f))
+    def liftSetterResult!(f: Interop/Json.JsonArrayBuilder[r] -> Result[Interop/Json.JsonArrayBuilder[r], err] \ ef): JsonArrayBuilder[r, ka, Unit] \ ef with ToString[err] =
+        JsonArrayBuilder(MonadLib/MutStateError.liftSetterResult!(f)) |> Functor.ignore
 
 
     ///
@@ -80,7 +80,7 @@ namespace Basis/Json/JsonArrayBuilder {
     pub def runBuilder(r: Region[r], 
                         ma: JsonArrayBuilder[r, a, a], 
                         s: Interop/Json.JsonArrayBuilder[r]): Result[a, String] \ r = 
-        MonadLib/Builder.runBuilder(r, getJsonArrayBuilder(ma), s)
+        MonadLib/MutStateError.runMutStateError(r, getJsonArrayBuilder(ma), s)
 
 
     pub def build(r: Region[r], ma: JsonArrayBuilder[r, a, a]): Result[Interop/Json.JsonArray, String] \{ Read(r), Write(r) } = 
@@ -95,39 +95,39 @@ namespace Basis/Json/JsonArrayBuilder {
 
 
     pub def addNull!(): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonArrayBuilder.addNull!)
+        liftSetter!(Interop/Json/JsonArrayBuilder.addNull!)
 
 
     pub def addBool!(value: Bool): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonArrayBuilder.addBool!(value))
+        liftSetter!(Interop/Json/JsonArrayBuilder.addBool!(value))
         
 
     pub def addBigInt!(value: BigInt): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonArrayBuilder.addBigInt!(value))
+        liftSetter!(Interop/Json/JsonArrayBuilder.addBigInt!(value))
 
 
     pub def addFloat64!(value: Float64): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonArrayBuilder.addFloat64!(value))
+        liftSetter!(Interop/Json/JsonArrayBuilder.addFloat64!(value))
 
     pub def addInt32!(value: Int32): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonArrayBuilder.addInt32!(value))
+        liftSetter!(Interop/Json/JsonArrayBuilder.addInt32!(value))
 
     pub def addString!(value: String): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonArrayBuilder.addString!(value))
+        liftSetter!(Interop/Json/JsonArrayBuilder.addString!(value))
 
     pub def addJsonValue!(value: JsonValue): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
-        liftSetter(Interop/Json/JsonArrayBuilder.addJsonValue!(value))
+        liftSetter!(Interop/Json/JsonArrayBuilder.addJsonValue!(value))
 
 
     pub def addJsonArrayBuilder!(value: JsonArrayBuilder[r, ka, ka]): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
         match buildRawBuilder(() as Region[r], value) {
-            case Ok(value1) => liftSetterResult(Interop/Json/JsonArrayBuilder.addJsonArrayBuilder!(value = value1))
+            case Ok(value1) => liftSetterResult!(Interop/Json/JsonArrayBuilder.addJsonArrayBuilder!(value = value1))
             case Err(msg)   => throwError(msg)
         }
 
     pub def addJsonObjectBuilder!(value: JsonObjectBuilder[r, ka, ka]): JsonArrayBuilder[r, ka, Unit] \ Write(r) =
         match Basis/Json/JsonObjectBuilder.buildRawBuilder(() as Region[r], value) {
-            case Ok(value1) => liftSetterResult(Interop/Json/JsonArrayBuilder.addJsonObjectBuilder!(value = value1))
+            case Ok(value1) => liftSetterResult!(Interop/Json/JsonArrayBuilder.addJsonObjectBuilder!(value = value1))
             case Err(msg)   => throwError(msg)
         }
         
