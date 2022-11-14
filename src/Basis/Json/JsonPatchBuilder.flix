@@ -91,13 +91,13 @@ namespace Basis/Json/JsonPatchBuilder {
             case Ok(_)    => Interop/Json/JsonPatchBuilder.build(state1) |> Ok
         }
 
-    pub def addBool!(path: {path :: String}, value: Bool): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
+    pub def addBool!(path: {path = String}, value: Bool): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         liftSetter!(Interop/Json/JsonPatchBuilder.addBool!(path, value))
 
-    pub def addInt32!(path: {path :: String}, value: Int32): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
+    pub def addInt32!(path: {path = String}, value: Int32): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         liftSetter!(Interop/Json/JsonPatchBuilder.addInt32!(path, value))
 
-    pub def addString!(path: {path :: String}, value: String): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
+    pub def addString!(path: {path = String}, value: String): JsonPatchBuilder[r, ka, Unit] \ Write(r) =
         liftSetter!(Interop/Json/JsonPatchBuilder.addString!(path, value))
 
 /*
