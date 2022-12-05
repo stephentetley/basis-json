@@ -135,13 +135,13 @@ namespace Basis/Json/JsonArrayEvaluator {
         liftGetter(Interop/Json/JsonArray.isNull(ix))
 
 
-    pub def evalJsonObject(ix: Int32, ma: JsonObjectEvaluator[r, a, a]): JsonArrayEvaluator[r, ka, a] & r =
+    pub def evalJsonObject(r: Region[r], ix: Int32, ma: JsonObjectEvaluator[r, a, a]): JsonArrayEvaluator[r, ka, a] & r =
         let* obj = getJsonObject(ix);
-        liftActionResult(_ -> Basis/Json/JsonObjectEvaluator.runJsonObjectEvaluator(() as Region[r], ma, obj))
+        liftActionResult(_ -> Basis/Json/JsonObjectEvaluator.runJsonObjectEvaluator(r, ma, obj))
         
-    pub def evalJsonArray(ix: Int32, ma: JsonArrayEvaluator[r, a, a]): JsonArrayEvaluator[r, ka, a] & r =
+    pub def evalJsonArray(r: Region[r], ix: Int32, ma: JsonArrayEvaluator[r, a, a]): JsonArrayEvaluator[r, ka, a] & r =
         let* obj = getJsonArray(ix);
-        liftActionResult(_ -> runJsonArrayEvaluator(() as Region[r], ma, obj))
+        liftActionResult(_ -> runJsonArrayEvaluator(r, ma, obj))
 
     pub def size(): JsonArrayEvaluator[r, ka, Int32] =
         liftGetter(Interop/Json/JsonArray.size)

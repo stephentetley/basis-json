@@ -116,14 +116,14 @@ namespace Basis/Json/JsonObjectBuilder {
         liftSetter!(Interop/Json/JsonObjectBuilder.addJsonValue!(name, value))
 
 
-    pub def addJsonArrayBuilder!(name: String, value: JsonArrayBuilder[r, ka, ka]): JsonObjectBuilder[r, ka, Unit] \ Write(r) =
-        match Basis/Json/JsonArrayBuilder.buildRawBuilder(() as Region[r], value) {
+    pub def addJsonArrayBuilder!(r: Region[r], name: String, value: JsonArrayBuilder[r, ka, ka]): JsonObjectBuilder[r, ka, Unit] \ Write(r) =
+        match Basis/Json/JsonArrayBuilder.buildRawBuilder(r, value) {
             case Ok(value1) => liftSetterResult!(Interop/Json/JsonObjectBuilder.addJsonArrayBuilder!(name, value = value1))
             case Err(msg)   => throwError(msg)
         }
 
-    pub def addJsonObjectBuilder!(name: String, value: JsonObjectBuilder[r, ka, ka]): JsonObjectBuilder[r, ka, Unit] \ Write(r) =
-        match buildRawBuilder(() as Region[r], value) {
+    pub def addJsonObjectBuilder!(r: Region[r], name: String, value: JsonObjectBuilder[r, ka, ka]): JsonObjectBuilder[r, ka, Unit] \ Write(r) =
+        match buildRawBuilder(r, value) {
             case Ok(value1) => liftSetterResult!(Interop/Json/JsonObjectBuilder.addJsonObjectBuilder!(name, value = value1))
             case Err(msg)   => throwError(msg)
         }

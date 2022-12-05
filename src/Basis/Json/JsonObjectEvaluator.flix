@@ -20,7 +20,7 @@ namespace Basis/Json {
         
 
     instance Functor[JsonObjectEvaluator[r, ka]] {
-        pub def map(f: a -> b & ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] & ef = 
+        pub def map(f: a -> b \ ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] \ ef = 
             Basis/Json/JsonObjectEvaluator.map(f, ma)
     }
 
@@ -28,12 +28,12 @@ namespace Basis/Json {
         pub def point(x: a): JsonObjectEvaluator[r, ka, a] = 
             Basis/Json/JsonObjectEvaluator.point(x)
 
-        pub def ap(mf: JsonObjectEvaluator[r, ka, a -> b & ef], ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] & ef =
+        pub def ap(mf: JsonObjectEvaluator[r, ka, a -> b \ ef], ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] \ ef =
             Basis/Json/JsonObjectEvaluator.ap(mf, ma)
     }
 
     instance Monad[JsonObjectEvaluator[r, ka]] {
-        pub def flatMap(f: a -> JsonObjectEvaluator[r, ka, b] & ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] & ef =
+        pub def flatMap(f: a -> JsonObjectEvaluator[r, ka, b] \ ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] \ ef =
             Basis/Json/JsonObjectEvaluator.flatMap(f, ma)
     }
 
@@ -71,19 +71,19 @@ namespace Basis/Json/JsonObjectEvaluator {
 
     pub def runJsonObjectEvaluator(r: Region[r], 
                                     ma: JsonObjectEvaluator[r, a, a], 
-                                    obj: Interop/Json.JsonObject): Result[a, String] & r =
+                                    obj: Interop/Json.JsonObject): Result[a, String] \ r =
         MonadLib/Evaluator.runEvaluator(r, getJsonObjectEvaluator(ma), obj)
 
     pub def point(x: a): JsonObjectEvaluator[r, ka, a] = JsonObjectEvaluator(MonadLib/Evaluator.point(x))
 
             
-    pub def map(f: a -> b & ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] & ef = 
+    pub def map(f: a -> b \ ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] \ ef = 
         JsonObjectEvaluator(MonadLib/Evaluator.map(f, getJsonObjectEvaluator(ma)))
 
-    pub def ap(mf: JsonObjectEvaluator[r, ka, a -> b & ef], ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] & ef =
+    pub def ap(mf: JsonObjectEvaluator[r, ka, a -> b \ ef], ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] \ ef =
         JsonObjectEvaluator(MonadLib/Evaluator.ap(getJsonObjectEvaluator(mf), getJsonObjectEvaluator(ma)))
 
-    pub def flatMap(f: a -> JsonObjectEvaluator[r, ka, b] & ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] & ef =
+    pub def flatMap(f: a -> JsonObjectEvaluator[r, ka, b] \ ef, ma: JsonObjectEvaluator[r, ka, a]): JsonObjectEvaluator[r, ka, b] \ ef =
         JsonObjectEvaluator(MonadLib/Evaluator.flatMap(f >> getJsonObjectEvaluator, getJsonObjectEvaluator(ma)))
 
 
@@ -97,14 +97,14 @@ namespace Basis/Json/JsonObjectEvaluator {
         JsonObjectEvaluator(MonadLib/Evaluator.orelse(getJsonObjectEvaluator(ma), getJsonObjectEvaluator(mb)))
 
 
-    def liftGetter(f: Interop/Json.JsonObject -> a & ef): JsonObjectEvaluator[r, ka, a] & ef =
+    def liftGetter(f: Interop/Json.JsonObject -> a \ ef): JsonObjectEvaluator[r, ka, a] \ ef =
         JsonObjectEvaluator(MonadLib/Evaluator.liftGetter(f))
 
-    def liftGetterResult(f: Interop/Json.JsonObject -> Result[a, err] & ef): JsonObjectEvaluator[r, ka, a] & ef with ToString[err] =
+    def liftGetterResult(f: Interop/Json.JsonObject -> Result[a, err] \ ef): JsonObjectEvaluator[r, ka, a] \ ef with ToString[err] =
         JsonObjectEvaluator(MonadLib/Evaluator.liftGetterResult(f))
 
 
-    def liftActionResult(f: Unit -> Result[a, String] & ef): JsonObjectEvaluator[r, ka, a] & ef =          
+    def liftActionResult(f: Unit -> Result[a, String] \ ef): JsonObjectEvaluator[r, ka, a] \ ef =          
         JsonObjectEvaluator(MonadLib/Evaluator.liftActionResult(f))
 
     pub def getBool(name: String): JsonObjectEvaluator[r, ka, Bool] =
@@ -137,13 +137,14 @@ namespace Basis/Json/JsonObjectEvaluator {
     pub def isNull(name: String): JsonObjectEvaluator[r, ka, Bool] =
         liftGetter(Interop/Json/JsonObject.isNull(name))
 
-    pub def evalJsonObject(name: String, ma: JsonObjectEvaluator[r, a, a]): JsonObjectEvaluator[r, ka, a] & r =
+    /// TODO supply Region or get it from the wrapped Evaluator monad?
+    pub def evalJsonObject(r: Region[r], name: String, ma: JsonObjectEvaluator[r, a, a]): JsonObjectEvaluator[r, ka, a] \ r =
         let* obj = getJsonObject(name);
-        liftActionResult(_ -> runJsonObjectEvaluator(() as Region[r], ma, obj))
+        liftActionResult(_ -> runJsonObjectEvaluator(r, ma, obj))
         
-    pub def evalJsonArray(name: String, ma: JsonArrayEvaluator[r, a, a]): JsonObjectEvaluator[r, ka, a] & r =
+    pub def evalJsonArray(r: Region[r], name: String, ma: JsonArrayEvaluator[r, a, a]): JsonObjectEvaluator[r, ka, a] \ r =
         let* obj = getJsonArray(name);
-        liftActionResult(_ -> Basis/Json/JsonArrayEvaluator.runJsonArrayEvaluator(() as Region[r], ma, obj))
+        liftActionResult(_ -> Basis/Json/JsonArrayEvaluator.runJsonArrayEvaluator(r, ma, obj))
 
 
     pub def size(): JsonObjectEvaluator[r, ka, Int32] =
